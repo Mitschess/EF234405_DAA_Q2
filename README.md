@@ -2,6 +2,12 @@
 
 Kampus 2D multipemain (Lobi, Kelas A, Kelas B, Aula, Taman) tempat setiap orang punya avatar. Ketuk sebuah petak, dan avatar mencari jalan ke sana sendiri. Rute dicari dengan dua algoritma dari mata kuliah, yang bisa dipilih dan dibandingkan langsung di layar:
 
+
+
+https://github.com/user-attachments/assets/576c458b-fe7c-431e-b14c-e1142b52fa32
+
+
+
 - **BFS** (Breadth-First Search): rute dengan **langkah paling sedikit**.
 - **Dijkstra**: rute dengan **biaya paling rendah**, karena setiap jenis petak punya biaya.
 
