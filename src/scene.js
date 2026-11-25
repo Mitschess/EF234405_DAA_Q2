@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser'
-import { TILE, W, H, DX, DY, STEP_MS, COLORS, walkable, findPath, zoneIndexAt, ZONES } from '../shared/map.js'
+import { TILE, W, H, DX, DY, STEP_MS, COLORS, walkable, zoneIndexAt, ZONES } from '../shared/map.js'
+import { bfs } from '../shared/pathfinding.js'
 import { drawWorld, drawAvatar, AV_W, AV_H } from './art.js'
 
 const px = (x) => x * TILE + TILE / 2
@@ -240,7 +241,7 @@ export class WorldScene extends Phaser.Scene {
     if (!this.me) return
     const tx = Math.floor(pointer.worldX / TILE)
     const ty = Math.floor(pointer.worldY / TILE)
-    const path = findPath(this.me.x, this.me.y, tx, ty)
+    const path = bfs(this.me.x, this.me.y, tx, ty)?.path
     if (!path?.length) return
     this.path = path
     const [gx, gy] = path[path.length - 1]

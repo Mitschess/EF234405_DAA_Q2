@@ -109,38 +109,7 @@ export const NEAR_RADIUS = 6 // tiles; "Sekitar" chat reaches this far
 export const NAME_MAX = 20
 export const CHAT_MAX = 200
 
-// breadth-first path over the grid; a blocked target means "walk up next to it"
-export function findPath(sx, sy, tx, ty) {
-  const goals = new Set()
-  if (walkable(tx, ty)) goals.add(ty * W + tx)
-  else for (let d = 0; d < 4; d++) if (walkable(tx + DX[d], ty + DY[d])) goals.add((ty + DY[d]) * W + tx + DX[d])
-  if (!goals.size) return null
-  const start = sy * W + sx
-  if (goals.has(start)) return []
-  const prev = new Int32Array(W * H).fill(-1)
-  prev[start] = start
-  const queue = [start]
-  for (let head = 0; head < queue.length; head++) {
-    const cur = queue[head]
-    const cx = cur % W
-    const cy = (cur - cx) / W
-    for (let d = 0; d < 4; d++) {
-      const nx = cx + DX[d]
-      const ny = cy + DY[d]
-      if (!walkable(nx, ny)) continue
-      const next = ny * W + nx
-      if (prev[next] !== -1) continue
-      prev[next] = cur
-      if (goals.has(next)) {
-        const path = []
-        for (let at = next; at !== start; at = prev[at]) path.push([at % W, Math.floor(at / W)])
-        return path.reverse()
-      }
-      queue.push(next)
-    }
-  }
-  return null
-}
+// the path searches (BFS and Dijkstra) live in pathfinding.js
 
 // strip control and bidi-override characters, then cut to a length in characters (not UTF-16 units)
 export function cleanText(value, max) {
