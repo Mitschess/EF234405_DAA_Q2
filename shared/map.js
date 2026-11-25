@@ -80,6 +80,13 @@ const BLOCKING = new Set(['#', 'T', 'D', 'B', 'P', 'w', 'b'])
 export const tileAt = (x, y) => (x >= 0 && y >= 0 && x < W && y < H ? grid[y][x] : '#')
 export const walkable = (x, y) => !BLOCKING.has(tileAt(x, y))
 
+// Cost of stepping onto a tile, the edge weight for the weighted shortest path (Dijkstra).
+// Floors and garden paths are quick, the stage is a step up, grass is slow, and squeezing
+// along a row of chairs or seats is slowest. BFS ignores these and counts every step as 1.
+export const COST = { '.': 1, ',': 1, _: 1, p: 1, S: 2, g: 3, c: 5, C: 5 }
+export const tileCost = (x, y) => (walkable(x, y) ? COST[tileAt(x, y)] ?? 1 : Infinity)
+export const pathCost = (path) => path.reduce((sum, [x, y]) => sum + tileCost(x, y), 0)
+
 const zoneGrid = new Int8Array(W * H).fill(-1)
 ZONES.forEach((z, i) => {
   for (let y = z.y; y < z.y + z.h; y++) for (let x = z.x; x < z.x + z.w; x++) zoneGrid[y * W + x] = i
