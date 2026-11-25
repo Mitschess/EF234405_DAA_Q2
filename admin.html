@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#160a45" />
+    <title>Admin Kelas Virtual · ILITS 2027</title>
+  </head>
+  <body>
+    <div class="overlay" id="login">
+      <form class="card" id="login-form">
+        <p class="eyebrow">Khusus panitia</p>
+        <h1>Panel Admin</h1>
+        <p class="lede">Pantau dan atur Kelas Virtual: siapa yang di dalam, beban server, buka-tutup kelas.</p>
+        <label class="field">
+          <span>Kode admin</span>
+          <input id="login-token" type="password" required autocomplete="current-password" />
+        </label>
+        <label class="field login-name">
+          <span>Nama kamu <small>(dicatat di riwayat aktivitas)</small></span>
+          <input id="login-name" maxlength="20" placeholder="mis. Rara" autocomplete="nickname" />
+        </label>
+        <button class="primary" type="submit" id="login-button">Masuk</button>
+        <p class="status" id="login-status" role="status"></p>
+      </form>
+    </div>
+
+    <div class="shell" id="app" hidden>
+      <header class="top">
+        <div>
+          <p class="eyebrow">ILITS 2027 · Kelas Virtual</p>
+          <h1>Panel Admin</h1>
+        </div>
+        <div class="top-meta">
+          <span class="mode-chip" id="mode-chip" data-mode="open">Terbuka</span>
+          <span class="updated" id="updated" role="status">Memuat…</span>
+          <a class="ghost" href="./" target="_blank" rel="noopener">Buka kelas ↗</a>
+          <button class="ghost" id="logout" type="button">Keluar</button>
+        </div>
+      </header>
+
+      <p class="offline" id="offline" role="alert" hidden>Server tidak terjangkau. Angka di bawah bukan yang terbaru; mencoba lagi…</p>
+
+      <main class="board" id="board">
+        <section class="tiles" aria-label="Ringkasan">
+          <article class="tile tile-hero">
+            <h2>Online sekarang</h2>
+            <p class="value" id="k-online">0</p>
+            <p class="sub" id="k-online-sub"></p>
+          </article>
+          <article class="tile">
+            <h2>Pernah masuk</h2>
+            <p class="value" id="k-visitors">0</p>
+            <p class="sub" id="k-visitors-sub"></p>
+          </article>
+          <article class="tile">
+            <h2>Chat terkirim</h2>
+            <p class="value" id="k-chats">0</p>
+            <p class="sub" id="k-chats-sub"></p>
+          </article>
+          <article class="tile">
+            <h2>Beban server</h2>
+            <p class="value level" id="k-load" data-level="good"><span class="level-icon" aria-hidden="true"></span><span id="k-load-label">Lancar</span></p>
+            <div class="meter" id="k-load-meter" role="meter" aria-label="Waktu kerja per tick" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="k-load-fill"></span></div>
+            <p class="sub" id="k-load-sub"></p>
+          </article>
+          <article class="tile">
+            <h2>Server</h2>
+            <dl class="facts">
+              <div><dt>Data keluar</dt><dd id="k-kb">–</dd></div>
+              <div><dt>RAM</dt><dd id="k-ram">–</dd></div>
+              <div><dt>Nyala</dt><dd id="k-uptime">–</dd></div>
+            </dl>
+          </article>
+        </section>
+
+        <div class="grid-2">
+          <section class="panel" aria-labelledby="ctl-title">
+            <h2 id="ctl-title">Kontrol kelas</h2>
+
+            <fieldset class="modes">
+              <legend>Status kelas</legend>
+              <label class="mode">
+                <input type="radio" name="mode" value="open" />
+                <span><strong>Terbuka</strong><small>Siapa saja bisa masuk.</small></span>
+              </label>
+              <label class="mode">
+                <input type="radio" name="mode" value="locked" />
+                <span><strong>Kunci pintu</strong><small>Yang sudah di dalam tetap; peserta baru tidak bisa masuk.</small></span>
+              </label>
+              <label class="mode mode-danger">
+                <input type="radio" name="mode" value="closed" />
+                <span><strong>Tutup kelas</strong><small>Semua peserta dikeluarkan; tidak ada yang bisa masuk.</small></span>
+              </label>
+            </fieldset>
+
+            <div class="control">
+              <label class="switch">
+                <input type="checkbox" id="chat-lock" role="switch" />
+                <span class="switch-track" aria-hidden="true"></span>
+                <span>Kunci chat untuk semua peserta</span>
+              </label>
+            </div>
+
+            <form class="control inline" id="max-form">
+              <label for="max-input">Batas peserta</label>
+              <input id="max-input" type="number" min="1" max="5000" inputmode="numeric" required />
+              <button type="submit" class="small">Simpan</button>
+            </form>
+
+            <form class="control" id="ann-form">
+              <label for="ann-input">Pengumuman <small>(muncul di layar semua peserta)</small></label>
+              <textarea id="ann-input" maxlength="300" rows="2" placeholder="mis. Sesi 2 mulai pukul 14.00 di Aula"></textarea>
+              <div class="actions">
+                <button type="submit" class="small accent">Pasang</button>
+                <button type="button" class="small" id="ann-clear">Turunkan</button>
+              </div>
+              <p class="ann-current" id="ann-current"></p>
+            </form>
+
+            <p class="flash" id="flash" role="status"></p>
+          </section>
+
+          <section class="panel" aria-labelledby="rooms-title">
+            <h2 id="rooms-title">Orang per ruangan</h2>
+            <div class="bars" id="rooms"></div>
+          </section>
+        </div>
+
+        <section class="panel" aria-labelledby="trend-title">
+          <div class="panel-head">
+            <h2 id="trend-title">Sepanjang waktu</h2>
+            <div class="seg" role="radiogroup" aria-label="Rentang waktu" id="range">
+              <button type="button" role="radio" data-min="15" aria-checked="true">15 menit</button>
+              <button type="button" role="radio" data-min="60" aria-checked="false">1 jam</button>
+              <button type="button" role="radio" data-min="180" aria-checked="false">3 jam</button>
+            </div>
+          </div>
+          <div class="charts">
+            <figure class="chart">
+              <figcaption>Orang online</figcaption>
+              <div class="plot" id="chart-online"></div>
+            </figure>
+            <figure class="chart">
+              <figcaption>Beban server <small>ms kerja per tick, jatahnya 100 ms</small></figcaption>
+              <div class="plot" id="chart-tick"></div>
+            </figure>
+          </div>
+          <details class="table-view" id="minutes">
+            <summary>Lihat angka per menit</summary>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Pukul</th><th class="num">Online</th><th class="num">Beban (ms/tick)</th><th class="num">Data keluar (KB/s)</th></tr></thead>
+                <tbody id="minutes-body"></tbody>
+              </table>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel" aria-labelledby="people-title">
+          <div class="panel-head">
+            <h2 id="people-title">Peserta <span class="count" id="people-count"></span></h2>
+            <input type="search" class="search" id="people-search" placeholder="Cari nama…" aria-label="Cari peserta" />
+          </div>
+          <div class="table-wrap people-wrap">
+            <table class="people">
+              <thead>
+                <tr><th>Nama</th><th>Ruangan</th><th>Di kelas</th><th class="num">Chat</th><th><span class="sr-only">Tindakan</span></th></tr>
+              </thead>
+              <tbody id="people"></tbody>
+            </table>
+          </div>
+          <p class="note" id="people-note"></p>
+        </section>
+
+        <section class="panel" aria-labelledby="log-title">
+          <h2 id="log-title">Aktivitas panitia</h2>
+          <ol class="events" id="events"></ol>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="confirm" id="confirm">
+      <form method="dialog" class="card">
+        <h2 id="confirm-title"></h2>
+        <p class="lede" id="confirm-text"></p>
+        <div class="actions">
+          <button value="cancel" class="small">Batal</button>
+          <button value="ok" class="small danger" id="confirm-ok">Ya</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="tooltip" id="tooltip" hidden></div>
+
+    <script type="module" src="/src/admin.js"></script>
+  </body>
+</html>

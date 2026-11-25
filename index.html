@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#160a45" />
+    <title>Kelas Virtual · ILITS 2027</title>
+  </head>
+  <body>
+    <div id="game" aria-label="Peta kampus virtual"></div>
+
+    <div id="hud" hidden>
+      <div class="hud-top">
+        <p class="pill" id="zone-pill"><span class="dot"></span><strong id="zone-name">Lobi</strong><span id="zone-count"></span></p>
+        <p class="pill"><span id="online-count">0</span>&nbsp;online</p>
+      </div>
+      <div class="top-center">
+        <p class="reconnecting" id="reconnecting" role="status" hidden>Koneksi terputus, menyambung ulang…</p>
+        <div class="announce" id="announce" role="status" hidden>
+          <span class="announce-tag">Pengumuman</span>
+          <p class="announce-text" id="announce-text"></p>
+          <button class="announce-close" id="announce-close" type="button" aria-label="Tutup pengumuman">×</button>
+        </div>
+        <p class="toast" id="toast" aria-live="polite"></p>
+      </div>
+
+      <section class="chat" id="chat" data-open="true">
+        <button class="chat-toggle" id="chat-toggle" type="button" aria-expanded="true">
+          <span>Chat</span><span class="badge" id="unread" hidden>0</span>
+        </button>
+        <ol class="chat-log" id="chat-log" aria-live="polite"></ol>
+        <form class="chat-form" id="chat-form" autocomplete="off">
+          <select id="chat-scope" aria-label="Kirim ke">
+            <option value="near">Sekitar</option>
+            <option value="zone">Ruangan ini</option>
+            <option value="all">Semua</option>
+          </select>
+          <input id="chat-input" maxlength="200" placeholder="Tulis pesan…" aria-label="Pesan" enterkeyhint="send" />
+          <button type="submit">Kirim</button>
+        </form>
+      </section>
+
+      <p class="hint">Jalan: panah / WASD atau ketuk lantai · <kbd>Enter</kbd> chat · <kbd>Esc</kbd> kembali jalan</p>
+    </div>
+
+    <div class="overlay" id="join">
+      <form class="card" id="join-form">
+        <p class="eyebrow">Ini Lho ITS! 2027</p>
+        <h1>Kelas Virtual</h1>
+        <p class="lede">Jalan-jalan keliling kampus, masuk kelas, dan ngobrol lewat chat.</p>
+        <label class="field">
+          <span>Nama kamu</span>
+          <input id="join-name" maxlength="20" required placeholder="mis. Rara" autocomplete="nickname" />
+        </label>
+        <fieldset class="colors">
+          <legend>Warna avatar</legend>
+          <div id="color-choices"></div>
+        </fieldset>
+        <button class="primary" type="submit" id="join-button">Masuk</button>
+        <p class="status" id="join-status" role="status"></p>
+      </form>
+    </div>
+
+    <div class="overlay" id="lost" hidden>
+      <div class="card">
+        <h2 id="lost-title">Koneksi terputus</h2>
+        <p class="lede" id="lost-reason">Sambungan ke kelas hilang.</p>
+        <button class="primary" type="button" id="reconnect">Sambung lagi</button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
