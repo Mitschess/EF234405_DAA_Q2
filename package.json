@@ -13,7 +13,8 @@
     "start": "node server/index.js",
     "preview": "vite preview",
     "server": "node server/index.js",
-    "bots": "node scripts/bots.js"
+    "bots": "node scripts/bots.js",
+    "eval": "node scripts/evaluate.js --out evaluation/results.md"
   },
   "dependencies": {
     "@fontsource-variable/caveat": "^5.3.0",
