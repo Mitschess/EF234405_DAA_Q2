@@ -14,6 +14,22 @@
         <p class="pill" id="zone-pill"><span class="dot"></span><strong id="zone-name">Lobi</strong><span id="zone-count"></span></p>
         <p class="pill"><span id="online-count">0</span>&nbsp;online</p>
       </div>
+
+      <section class="route" aria-label="Pencarian rute">
+        <div class="route-head">
+          <span class="route-title">Rute</span>
+          <div class="algo" role="group" aria-label="Algoritma">
+            <button type="button" data-algo="bfs" aria-pressed="true">BFS</button>
+            <button type="button" data-algo="dijkstra" aria-pressed="false">Dijkstra</button>
+          </div>
+        </div>
+        <p class="route-empty" id="route-empty">Ketuk lantai untuk mencari rute.</p>
+        <table class="route-stats" id="route-stats" hidden>
+          <thead><tr><th scope="col"></th><th scope="col">Langkah</th><th scope="col">Biaya</th><th scope="col">Node</th><th scope="col">ms</th></tr></thead>
+          <tbody id="route-rows"></tbody>
+        </table>
+        <p class="route-legend">Biaya petak: lantai 1 · panggung 2 · rumput 3 · kursi 5</p>
+      </section>
       <div class="top-center">
         <p class="reconnecting" id="reconnecting" role="status" hidden>Koneksi terputus, menyambung ulang…</p>
         <div class="announce" id="announce" role="status" hidden>

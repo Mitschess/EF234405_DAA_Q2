@@ -1,12 +1,14 @@
 import * as Phaser from 'phaser'
 import { TILE, W, H, DX, DY, STEP_MS, COLORS, walkable, zoneIndexAt, ZONES } from '../shared/map.js'
-import { bfs } from '../shared/pathfinding.js'
+import { ALGORITHMS } from '../shared/pathfinding.js'
 import { drawWorld, drawAvatar, AV_W, AV_H } from './art.js'
 
 const px = (x) => x * TILE + TILE / 2
 const py = (y) => y * TILE + TILE / 2
 const BODY_Y = 13
 const BUBBLE_MS = 6000
+const ROUTE_COLOR = { bfs: 0xffd43b, dijkstra: 0x2bcf83 }
+const SPREAD_MS = 450 // how long the explored tiles take to appear, in the order they were visited
 
 const NAME_STYLE = {
   fontFamily: 'Poppins, sans-serif',
@@ -17,7 +19,8 @@ const NAME_STYLE = {
   strokeThickness: 3,
 }
 
-// hooks: send(msg), typing() -> bool, blurChat(), zone(zone, here, online, changed), ready()
+// hooks: send(msg), typing() -> bool, blurChat(), zone(zone, here, online, changed), ready(),
+//        algo() -> 'bfs' | 'dijkstra', route({ used, runs })
 export class WorldScene extends Phaser.Scene {
   constructor(hooks) {
     super('world')
@@ -25,6 +28,7 @@ export class WorldScene extends Phaser.Scene {
     this.players = new Map()
     this.me = null
     this.path = null
+    this.routeColor = ROUTE_COLOR.bfs
     this.bubbles = new Map()
     this.lastZone = null
   }
@@ -34,6 +38,8 @@ export class WorldScene extends Phaser.Scene {
     drawWorld(world.getContext())
     world.refresh()
     this.add.image(0, 0, 'world').setOrigin(0, 0).setDepth(-10)
+    this.searchG = this.add.graphics().setDepth(-7) // tiles the last search explored
+    this.routeG = this.add.graphics().setDepth(-6) // the route still to walk
 
     COLORS.forEach((color, i) => {
       for (let d = 0; d < 4; d++) {
@@ -103,14 +109,14 @@ export class WorldScene extends Phaser.Scene {
 
   fix(x, y) {
     if (!this.me) return
-    this.path = null
+    this.setPath(null)
     this.place(this.me, x, y, this.me.d, true)
   }
 
   clear() {
     for (const id of [...this.players.keys()]) this.removePlayer(id)
     this.me = null
-    this.path = null
+    this.setPath(null)
     this.cameras.main.stopFollow()
   }
 
@@ -241,12 +247,72 @@ export class WorldScene extends Phaser.Scene {
     if (!this.me) return
     const tx = Math.floor(pointer.worldX / TILE)
     const ty = Math.floor(pointer.worldY / TILE)
-    const path = bfs(this.me.x, this.me.y, tx, ty)?.path
-    if (!path?.length) return
-    this.path = path
-    const [gx, gy] = path[path.length - 1]
+    // run every algorithm so the panel can compare them; walk the chosen one's route
+    const runs = {}
+    for (const [key, a] of Object.entries(ALGORITHMS)) {
+      const t0 = performance.now()
+      const r = a.run(this.me.x, this.me.y, tx, ty)
+      runs[key] = r && { ...r, ms: performance.now() - t0 }
+    }
+    const used = ALGORITHMS[this.hooks.algo?.()] ? this.hooks.algo() : 'bfs'
+    const chosen = runs[used]
+    if (!chosen?.path.length) return
+    this.hooks.route?.({ used, runs })
+    this.routeColor = ROUTE_COLOR[used]
+    this.showSearch(chosen.order)
+    this.setPath(chosen.path.slice())
+    const [gx, gy] = chosen.path[chosen.path.length - 1]
     const mark = this.add.image(px(gx), py(gy), 'target').setDepth(-5).setAlpha(0.9)
     this.tweens.add({ targets: mark, scale: 0.4, alpha: 0, duration: 650, onComplete: () => mark.destroy() })
+  }
+
+  setPath(path) {
+    this.path = path
+    this.drawRoute()
+  }
+
+  // a line from where you stand through every tile still to walk
+  drawRoute() {
+    const g = this.routeG
+    if (!g) return
+    g.clear()
+    if (!this.me || !this.path?.length) return
+    g.lineStyle(4, this.routeColor, 0.85)
+    g.beginPath()
+    g.moveTo(px(this.me.x), py(this.me.y))
+    for (const [x, y] of this.path) g.lineTo(px(x), py(y))
+    g.strokePath()
+    g.fillStyle(this.routeColor, 1)
+    for (const [x, y] of this.path) g.fillCircle(px(x), py(y), 3)
+  }
+
+  // shade the tiles the search took off its queue, in that order, then fade them out
+  showSearch(order) {
+    const g = this.searchG
+    this.searchTween?.remove()
+    this.searchFade?.remove()
+    g.clear().setAlpha(1)
+    g.fillStyle(this.routeColor, 0.22)
+    let drawn = 0
+    const upTo = (n) => {
+      for (; drawn < n; drawn++) {
+        const i = order[drawn]
+        const x = i % W
+        g.fillRect(x * TILE + 2, ((i - x) / W) * TILE + 2, TILE - 4, TILE - 4)
+      }
+    }
+    const counter = { n: 0 }
+    this.searchTween = this.tweens.add({
+      targets: counter,
+      n: order.length,
+      duration: SPREAD_MS,
+      ease: 'Linear',
+      onUpdate: () => upTo(Math.floor(counter.n)),
+      onComplete: () => {
+        upTo(order.length)
+        this.searchFade = this.tweens.add({ targets: g, alpha: 0, delay: 700, duration: 600 })
+      },
+    })
   }
 
   update() {
@@ -258,14 +324,15 @@ export class WorldScene extends Phaser.Scene {
     if (!me || me.tween) return
     const dir = this.hooks.typing() ? null : this.keyDir()
     if (dir !== null) {
-      this.path = null
+      if (this.path) this.setPath(null)
       this.step(dir)
       return
     }
     if (this.path?.length) {
       const [nx, ny] = this.path.shift()
       const d = nx < me.x ? 1 : nx > me.x ? 2 : ny < me.y ? 3 : 0
-      if (!this.step(d)) this.path = null
+      if (this.step(d)) this.drawRoute()
+      else this.setPath(null)
     }
   }
 

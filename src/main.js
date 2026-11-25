@@ -5,6 +5,7 @@ import '@fontsource/poppins/600.css'
 import './style.css'
 import * as Phaser from 'phaser'
 import { COLORS, NAME_MAX } from '../shared/map.js'
+import { ALGORITHMS } from '../shared/pathfinding.js'
 import { WorldScene } from './scene.js'
 
 // a build-time URL wins; otherwise the server names itself in <meta name="kelas-ws"> (so the page
@@ -45,6 +46,10 @@ const el = {
   scope: $('chat-scope'),
   input: $('chat-input'),
   sendButton: $('chat-form').querySelector('button[type="submit"]'),
+  algoButtons: document.querySelectorAll('.algo button'),
+  routeEmpty: $('route-empty'),
+  routeStats: $('route-stats'),
+  routeRows: $('route-rows'),
 }
 
 const store = {
@@ -263,6 +268,47 @@ function onZone(zone, here, _total, changed) {
   if (changed && zone) toast(`Masuk ${zone.name}`)
 }
 
+// ---- route panel -------------------------------------------------------------------------------
+
+// the avatar walks the route of the chosen algorithm; both run on every tap so they can be compared
+let algo = store.get('kelas:algo')
+if (!ALGORITHMS[algo]) algo = 'bfs'
+
+function setAlgo(next) {
+  algo = next
+  store.set('kelas:algo', next)
+  for (const b of el.algoButtons) b.setAttribute('aria-pressed', String(b.dataset.algo === next))
+}
+setAlgo(algo)
+for (const b of el.algoButtons) {
+  b.addEventListener('click', () => {
+    setAlgo(b.dataset.algo)
+    b.blur() // so Enter opens the chat again instead of pressing this button
+  })
+}
+
+const fmt = (n) => n.toLocaleString('id-ID')
+
+function showRoute({ used, runs }) {
+  el.routeRows.replaceChildren(
+    ...Object.entries(ALGORITHMS).map(([key, a]) => {
+      const r = runs[key]
+      const tr = document.createElement('tr')
+      tr.dataset.algo = key
+      if (key === used) tr.className = 'used'
+      const cells = r ? [a.name, fmt(r.steps), fmt(r.cost), fmt(r.visited), r.ms.toFixed(2)] : [a.name, '–', '–', '–', '–']
+      for (const text of cells) {
+        const td = document.createElement('td')
+        td.textContent = text
+        tr.append(td)
+      }
+      return tr
+    }),
+  )
+  el.routeEmpty.hidden = true
+  el.routeStats.hidden = false
+}
+
 // ---- chat --------------------------------------------------------------------------------------
 
 let unread = 0
@@ -373,6 +419,8 @@ const scene = new WorldScene({
   typing,
   blurChat: () => { el.input.blur(); el.scope.blur() },
   zone: onZone,
+  algo: () => algo,
+  route: showRoute,
   ready: () => {
     el.joinButton.disabled = false
     el.joinButton.textContent = 'Masuk'
